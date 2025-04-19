@@ -609,16 +609,21 @@ tasks.register('convertersTest', Test) {
 }
 
 jacocoTestReport {
-    dependsOn convertersTest // 关键：只用你定义的任务来生成覆盖率
+    dependsOn convertersTest
+
+    classDirectories.setFrom(
+        fileTree(dir: "$buildDir/classes/java/main", includes: [
+            'stirling/software/SPDF/controller/api/converters/ConvertMarkdownToPdf.class',
+            'stirling/software/SPDF/controller/api/converters/ConvertPDFToMarkdown.class'
+        ])
+    )
+
+    executionData fileTree(dir: "$buildDir/jacoco", includes: ["convertersTest.exec"])
 
     reports {
         html.required = true
         xml.required = true
-        csv.required = false
     }
-
-    executionData fileTree(buildDir).include(
-        "/jacoco/convertersTest.exec"
-    )
 }
+
 
