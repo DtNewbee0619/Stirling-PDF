@@ -29,9 +29,7 @@ public class HtmlToPdfApiBlackBoxTest {
 
     @BeforeAll
     static void setUp() {
-        //        baseURI = "http://localhost:8080";
-        baseURI = "http://localhost:8080";
-        //        RestAssured.basePath = "http://localhost:";
+        port = 9090; // 设置端口号
     }
 
     /** 测试有效HTML文件转换为PDF的成功情况 */
@@ -176,6 +174,7 @@ public class HtmlToPdfApiBlackBoxTest {
                 .post(API_ENDPOINT)
                 .then()
                 .statusCode(HttpStatus.BAD_REQUEST.value())
+                //                .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .body(containsString("File must be either .html or .zip format"));
     }
 
