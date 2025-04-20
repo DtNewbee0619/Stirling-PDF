@@ -78,7 +78,7 @@ public class FileToPdf {
         return (!disableSanitize) ? CustomHtmlSanitizer.sanitize(htmlContent) : htmlContent;
     }
 
-    private static void sanitizeHtmlFilesInZip(Path zipFilePath, boolean disableSanitize)
+    static void sanitizeHtmlFilesInZip(Path zipFilePath, boolean disableSanitize)
             throws IOException {
         Path tempUnzippedDir = Files.createTempDirectory("unzipped_");
         try (ZipInputStream zipIn =
