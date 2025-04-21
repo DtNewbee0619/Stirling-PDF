@@ -281,7 +281,6 @@ class ConvertPDFToMarkdownTest {
                 new MockMultipartFile("fileInput", "null.pdf", "application/pdf", (byte[]) null);
         PDFFile request = new PDFFile();
         request.setFileInput(file);
-
         assertThrows(Exception.class, () -> convertPDFToMarkdown.processPdfToMarkdown(request));
     }
 }

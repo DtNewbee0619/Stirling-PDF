@@ -1,8 +1,11 @@
 package stirling.software.SPDF.utils;
 
+import static org.hamcrest.core.StringContains.containsString;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -11,6 +14,12 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.web.util.NestedServletException;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -74,16 +83,30 @@ public class ConvertMarkdownToPdfIntegrationTest {
      * code should handle fileInput.isEmpty() and return HTTP 400.
      */
     @Test
-    public void convertEmptyMarkdownFile_shouldReturnError() throws Exception {
-        MockMultipartFile emptyFile =
-                new MockMultipartFile("fileInput", "empty.md", "text/markdown", new byte[0]);
+    public void convertEmptyMarkdownFile_shouldReturnNonEmptyPdf() throws Exception {
+        MockMultipartFile emptyFile = new MockMultipartFile(
+            "fileInput",
+            "empty.md",
+            "text/markdown",
+            new byte[0]
+        );
 
-        mockMvc.perform(
-                        multipart("/api/v1/convert/markdown/pdf")
-                                .file(emptyFile)
-                                .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isBadRequest());// but there is throws IO Exception
+        MvcResult mvcResult = mockMvc.perform(
+                multipart("/api/v1/convert/markdown/pdf")
+                    .file(emptyFile)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+            )
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+            .andExpect(header()
+                .string("Content-Disposition", containsString("filename=\"empty.pdf\"")))
+            .andReturn();
 
+        // 4. 响应体非空，且以 "%PDF" 开头
+        byte[] body = mvcResult.getResponse().getContentAsByteArray();
+        assertTrue(body.length > 0, "PDF body should not be empty");
+        String pdfHeader = new String(body, 0, Math.min(body.length, 4), StandardCharsets.UTF_8);
+        assertEquals("%PDF", pdfHeader, "Response should start with PDF header");
     }
 
     /**
@@ -93,10 +116,28 @@ public class ConvertMarkdownToPdfIntegrationTest {
      * null. Controller should return HTTP 400 Bad Request for missing file input.
      */
     @Test
-    public void missingFileInput_shouldReturnError() throws Exception {
-        mockMvc.perform(
-                        multipart("/api/v1/convert/markdown/pdf")
-                                .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isBadRequest());// but there is throws IllegalArgument Exception
+    public void missingFileInput_shouldThrowIllegalArgumentException() throws Exception {
+        // 发起不带 fileInput 的请求
+        ServletException ex = assertThrows(
+            ServletException.class,
+            () -> mockMvc.perform(
+                    multipart("/api/v1/convert/markdown/pdf")
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                )
+                .andReturn()  // 一定要加 .andReturn() 触发执行
+        );
+
+        // 从 ServletException 拿到根 cause
+        Throwable root = ex.getRootCause();
+        assertNotNull(root, "Should have a root cause");
+        assertTrue(root instanceof IllegalArgumentException,
+            () -> "Expected IllegalArgumentException, but was " + root.getClass().getSimpleName());
+
+        // 验证异常消息
+        assertEquals(
+            "Please provide a Markdown file for conversion.",
+            root.getMessage(),
+            "Exception message should indicate missing Markdown file"
+        );
     }
 }
