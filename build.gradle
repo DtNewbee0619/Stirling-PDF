@@ -10,6 +10,7 @@ plugins {
     //id "nebula.lint" version "19.0.3"
     id("org.panteleyev.jpackageplugin") version "1.6.1"
     id "org.sonarqube" version "6.1.0.5360"
+    id "jacoco"
 }
 
 import com.github.jk1.license.render.*
@@ -363,7 +364,7 @@ launch4j {
 
 spotless {
     java {
-        target project.fileTree('src').include('**/*.java')
+        target project.fileTree('src').include('**/*.java').exclude('**/test/**')
 
         googleJavaFormat("1.25.2").aosp().reorderImports(false)
 
@@ -466,6 +467,8 @@ dependencies {
     implementation 'org.snakeyaml:snakeyaml-engine:2.9'
 
     testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
+
 
     // Batik
     implementation "org.apache.xmlgraphics:batik-all:1.18"
@@ -586,3 +589,41 @@ task printMacVersion {
 tasks.named('generateOpenApiDocs') {
     doNotTrackState("Tracking state is not supported for this task")
 }
+
+// 确保默认 test 任务还是用 JUnit Platform
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.register('convertersTest', Test) {
+    group = 'verification'
+    description = 'Run only markdown/pdf converter unit tests'
+    useJUnitPlatform()
+
+    // 只包含 markdown/pdf 的单元测试类
+    include '**/ConvertMarkdownToPdfTest.class'
+    include '**/ConvertPDFToMarkdownTest.class'
+
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+}
+
+jacocoTestReport {
+    dependsOn convertersTest
+
+    classDirectories.setFrom(
+        fileTree(dir: "$buildDir/classes/java/main", includes: [
+            'stirling/software/SPDF/controller/api/converters/ConvertMarkdownToPdf.class',
+            'stirling/software/SPDF/controller/api/converters/ConvertPDFToMarkdown.class'
+        ])
+    )
+
+    executionData fileTree(dir: "$buildDir/jacoco", includes: ["convertersTest.exec"])
+
+    reports {
+        html.required = true
+        xml.required = true
+    }
+}
+
+
