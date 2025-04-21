@@ -1,8 +1,3 @@
-### E2E
-
-* we can see there is picture in markdown, but the tool can't solve it.
-* 甚至在图片后面的文字就不会展现。
-
 
 ### API
 ### normal request
@@ -53,17 +48,15 @@ carpewang@wangkaipengdeMacBook-Pro ~ %
 curl -X POST "http://localhost:9090/api/v1/convert/markdown/pdf" \
   -H "Origin: http://localhost:9090" \
   -H "Referer: http://localhost:9090/markdown-to-pdf" \
-  -F "fileInput=@/dev/null;type=text/markdown"
+  -F "fileInput=@/dev/null;type=text/markdown"\
+  --output output.pdf
+
 ```
 response
 ```json
-{
-    "timestamp":"2025-04-19T18:57:24.236+00:00",
-    "status":500,
-    "error":"Internal Server Error",
-    "exception":"java.lang.IllegalArgumentException",
-    "trace":"because trace is too large so ignored"}
-}
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+Dload  Upload   Total   Spent    Left  Speed
+100  1116  100   911  100   205   2107    474 --:--:-- --:--:-- --:--:--  2583
 ```
 ........
 ### Missing fileInput Field
@@ -100,7 +93,7 @@ response:
     "status":500,
     "error":"Internal Server Error",
     "exception":"java.lang.IllegalArgumentException",
-    "trace":"because trace is too large so ignored"
+    "trace":"File must be in .md format. because trace is too large so ignored"
 }
 ```
 ### Large Markdown File

@@ -84,13 +84,12 @@ class ConvertMarkdownToPdfTest {
     }
 
     @Test
-    @DisplayName("Should throw error when uploading empty markdown")
-    void testMarkdownToPdf_emptyMarkdown_throwsException() {
+    @DisplayName("Should throw error when uploading nonexist markdown")
+    void testMarkdownToPdf_NotExistMarkdown_throwsException() throws Exception {
         MockMultipartFile file =
-                new MockMultipartFile("fileInput", "test.md", "text/markdown", new byte[0]);
+                new MockMultipartFile("fileInput", "This is a not exist test.md", "text/markdown", new byte[0]);
         GeneralFile request = new GeneralFile();
         request.setFileInput(file);
-
         assertThrows(Exception.class, () -> convertMarkdownToPdf.markdownToPdf(request));
     }
 

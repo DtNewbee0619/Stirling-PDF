@@ -105,7 +105,6 @@ public class ConvertMarkdownToPdfIntegrationTest {
                 .string("Content-Disposition", containsString("filename=\"empty.pdf\"")))
             .andReturn();
 
-        // 4. 响应体非空，且以 "%PDF" 开头
         byte[] body = mvcResult.getResponse().getContentAsByteArray();
         assertTrue(body.length > 0, "PDF body should not be empty");
         String pdfHeader = new String(body, 0, Math.min(body.length, 4), StandardCharsets.UTF_8);
