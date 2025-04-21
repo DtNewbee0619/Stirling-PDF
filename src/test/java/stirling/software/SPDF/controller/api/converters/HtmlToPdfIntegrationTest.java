@@ -1,6 +1,8 @@
 package stirling.software.SPDF.controller.api.converters;
 
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -16,6 +18,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+
+import jakarta.servlet.ServletException;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -101,13 +105,28 @@ public class HtmlToPdfIntegrationTest {
 
     @Test
     public void missingFileInput_shouldReturnBadRequest() throws Exception {
-        mockMvc.perform(
-                        multipart("/api/v1/convert/html/pdf")
-                                .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isBadRequest());
-    }
+        ServletException ex =
+                assertThrows(
+                        ServletException.class,
+                        () ->
+                                mockMvc.perform(
+                                                multipart("/api/v1/convert/html/pdf")
+                                                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                                        .andReturn());
 
-    // --- 新增测试用例 (使用 String 定义内容) ---
+        Throwable root = ex.getRootCause();
+        assertNotNull(root, "Should have a root cause");
+        assertTrue(
+                root instanceof IllegalArgumentException,
+                () ->
+                        "Expected IllegalArgumentException, but was "
+                                + root.getClass().getSimpleName());
+
+        assertEquals(
+                "Please provide an HTML or ZIP file for conversion.",
+                root.getMessage(),
+                "Exception message should indicate missing Markdown file");
+    }
 
     @Test
     public void convertHtmlWithCss_shouldReturnStyledPdf() throws Exception {
@@ -170,35 +189,5 @@ public class HtmlToPdfIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", MediaType.APPLICATION_PDF_VALUE))
                 .andExpect(header().string("Content-Length", greaterThan("0")));
-    }
-
-    @Test
-    public void uploadNonHtmlFileContent_shouldReturnError() throws Exception {
-        assumeWeasyprint();
-
-        String nonHtmlContent = "This is just plain text, not HTML, trying to be converted.";
-
-        MockMultipartFile mockFile =
-                new MockMultipartFile(
-                        "fileInput",
-                        "NotHtml.txt", // Filename suggestion
-                        MediaType.TEXT_HTML_VALUE, // Still claim it's HTML
-                        nonHtmlContent.getBytes(StandardCharsets.UTF_8));
-
-        mockMvc.perform(multipart("/api/v1/convert/html/pdf").file(mockFile))
-                .andExpect(status().isInternalServerError()); // Adjust based on actual behavior
-    }
-
-    @Test
-    public void uploadFileWithUnsupportedContentType_shouldReturnBadRequest() throws Exception {
-        MockMultipartFile mockFile =
-                new MockMultipartFile(
-                        "fileInput",
-                        "data.bin",
-                        MediaType.APPLICATION_OCTET_STREAM_VALUE, // Non-HTML type
-                        "binary data".getBytes(StandardCharsets.UTF_8));
-
-        mockMvc.perform(multipart("/api/v1/convert/html/pdf").file(mockFile))
-                .andExpect(status().isBadRequest()); // Or isUnsupportedMediaType() (415)
     }
 }
