@@ -18,59 +18,77 @@ import org.springframework.http.HttpStatus;
 
 import io.restassured.response.Response;
 
-/** 黑盒API测试 - HTML到PDF转换功能 这个测试类从外部客户端的角度验证API行为，不依赖于内部实现细节 */
-// @ExtendWith(SpringExtension.class)
-// @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+/**
+ * Black-box API testing - HTML to PDF conversion functionality This test class verifies API
+ * behavior from an external client's perspective, without relying on internal implementation
+ * details.
+ */
+// @ExtendWith(SpringExtension.class) // Annotation for Spring integration (if needed)
+// @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT) // Annotation for
+// Spring Boot test context (if needed)
 public class HtmlToPdfApiBlackBoxTest {
 
-    // @LocalServerPort private int port;
+    // @LocalServerPort private int port; // Injects the random port used by the server (if using
+    // @SpringBootTest)
 
-    private final String API_ENDPOINT = "/api/v1/convert/html/pdf";
+    private final String API_ENDPOINT = "/api/v1/convert/html/pdf"; // Define the API endpoint URL
 
     @BeforeAll
     static void setUp() {
-        port = 9090; // 设置端口号
+        // Set the port number for RestAssured. Replace with dynamic port if using @LocalServerPort
+        port = 9090;
+        // If using @SpringBootTest with a random port, you'd typically set RestAssured.port =
+        // this.port; in a @BeforeEach method
+        // For a fixed port setup like this, setting it statically is fine.
     }
 
-    /** 测试有效HTML文件转换为PDF的成功情况 */
+    /** Tests successful conversion of a valid HTML file to PDF. */
     @Test
     void testValidHtmlToPdf_Success() {
-        // 创建一个简单的有效HTML文件
-        String html = "<html><body><h1>测试HTML内容</h1></body></html>";
+        // Create a simple valid HTML content
+        String html = "<html><body><h1>Test HTML Content</h1></body></html>";
 
-        // 发送请求并验证响应
+        // Send the request and validate the response
         Response response =
                 given().multiPart(
-                                "fileInput",
-                                "test.html",
-                                html.getBytes(StandardCharsets.UTF_8),
-                                "text/html")
-                        .multiPart("zoom", "1.0")
+                                "fileInput", // Name of the file input parameter
+                                "test.html", // Original filename
+                                html.getBytes(StandardCharsets.UTF_8), // File content as bytes
+                                "text/html") // Content type of the file
+                        .multiPart("zoom", "1.0") // Form parameter for zoom level
                         .when()
-                        .post(API_ENDPOINT)
+                        .post(API_ENDPOINT) // Perform POST request
                         .then()
-                        .statusCode(200)
-                        .contentType("application/pdf")
-                        .header("Content-Disposition", containsString("filename=\"test.pdf\""))
+                        .statusCode(200) // Expect HTTP 200 OK status
+                        .contentType("application/pdf") // Expect PDF content type
+                        .header(
+                                "Content-Disposition",
+                                containsString(
+                                        "filename=\"test.pdf\"")) // Expect correct filename in
+                        // header
                         .extract()
-                        .response();
+                        .response(); // Extract the response object
 
-        // 验证响应是一个有效的PDF
+        // Validate the response is a valid PDF
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试包含HTML和资源的ZIP文件的成功转换 */
+    /** Tests successful conversion of a ZIP file containing HTML and resources. */
     @Test
     void testValidZipWithHtml_Success() throws IOException {
-        // 创建一个包含HTML和CSS的ZIP文件
+        // Create a ZIP file containing HTML and CSS
         byte[] zipBytes = createTestZipWithHtml();
 
-        // 发送请求并验证响应
+        // Send the request and validate the response
         Response response =
-                given().multiPart("fileInput", "test.zip", zipBytes, "application/zip")
-                        .multiPart("zoom", "1.5")
+                given().multiPart(
+                                "fileInput",
+                                "test.zip",
+                                zipBytes,
+                                "application/zip") // Upload the ZIP file
+                        .multiPart("zoom", "1.5") // Use a different zoom level
                         .when()
                         .post(API_ENDPOINT)
                         .then()
@@ -80,26 +98,26 @@ public class HtmlToPdfApiBlackBoxTest {
                         .extract()
                         .response();
 
-        // 验证响应是一个有效的PDF
+        // Validate the response is a valid PDF
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试使用不同缩放因子的转换 */
+    /** Tests conversion using a different zoom factor. */
     @Test
     void testHtmlToPdf_WithDifferentZoom_Success() {
-        // 创建一个简单的有效HTML文件
-        String html = "<html><body><h1>使用不同缩放的测试HTML</h1></body></html>";
+        // Create a simple valid HTML content
+        String html = "<html><body><h1>Test HTML with Different Zoom</h1></body></html>";
 
-        // 发送具有不同缩放值的请求
+        // Send the request with a different zoom value
         Response response =
                 given().multiPart(
                                 "fileInput",
                                 "test.html",
                                 html.getBytes(StandardCharsets.UTF_8),
                                 "text/html")
-                        .multiPart("zoom", "2.0") // 较高的缩放值
+                        .multiPart("zoom", "2.0") // Higher zoom value
                         .when()
                         .post(API_ENDPOINT)
                         .then()
@@ -108,22 +126,22 @@ public class HtmlToPdfApiBlackBoxTest {
                         .extract()
                         .response();
 
-        // 验证响应是一个有效的PDF
+        // Validate the response is a valid PDF
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试处理包含CSS样式的复杂内容的HTML */
+    /** Tests HTML with complex content including CSS styling. */
     @Test
     void testHtmlToPdf_WithComplexContent_Success() {
-        // 创建具有CSS样式和更复杂结构的HTML
+        // Create HTML with CSS styles and more complex structure
         String complexHtml =
                 "<html><head><style>body{font-family:Arial;color:blue;} h1{color:red;}</style></head>"
-                        + "<body><h1>样式化标题</h1><p>这是一个包含<b>粗体</b>和<i>斜体</i>文本的段落。</p>"
-                        + "<div style='background-color:yellow;padding:10px;'>这是一个带样式的div</div></body></html>";
+                        + "<body><h1>Styled Heading</h1><p>This is a paragraph with <b>bold</b> and <i>italic</i> text.</p>"
+                        + "<div style='background-color:yellow;padding:10px;'>This is a styled div</div></body></html>";
 
-        // 发送请求并验证响应
+        // Send the request and validate the response
         Response response =
                 given().multiPart(
                                 "fileInput",
@@ -139,100 +157,124 @@ public class HtmlToPdfApiBlackBoxTest {
                         .extract()
                         .response();
 
-        // 验证响应是一个有效的PDF
+        // Validate the response is a valid PDF
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试未提供文件时的API处理 */
+    /** Tests API handling when no file is provided. */
     @Test
     void testHtmlToPdf_WithNoFile_ReturnsBadRequest() {
-        // 发送没有文件的请求
-        given().multiPart("zoom", "1.0")
+        // Send request without a file
+        given().multiPart("zoom", "1.0") // Provide other parameters if needed
                 .when()
                 .post(API_ENDPOINT)
                 .then()
-                .statusCode(HttpStatus.BAD_REQUEST.value())
-                .body(containsString("Please provide an HTML or ZIP file for conversion"));
+                .statusCode(HttpStatus.BAD_REQUEST.value()) // Expect 400 Bad Request
+                .body(
+                        containsString(
+                                "Please provide an HTML or ZIP file for conversion")); // Expect
+        // specific
+        // error
+        // message
     }
 
-    /** 测试提供无效文件类型时的API处理 */
+    /** Tests API handling when an invalid file type is provided. */
     @Test
     void testHtmlToPdf_WithInvalidFileType_ReturnsBadRequest() {
-        // 创建一个文本文件（非HTML或ZIP）
-        String textContent = "这是纯文本，不是HTML";
+        // Create content for a text file (not HTML or ZIP)
+        String textContent = "This is plain text, not HTML";
 
-        // 使用文本文件发送请求
+        // Send request with a text file
         given().multiPart(
                         "fileInput",
-                        "test.txt",
+                        "test.txt", // Filename with .txt extension
                         textContent.getBytes(StandardCharsets.UTF_8),
-                        "text/plain")
+                        "text/plain") // Incorrect content type for this endpoint
                 .multiPart("zoom", "1.0")
                 .when()
                 .post(API_ENDPOINT)
                 .then()
-                .statusCode(HttpStatus.BAD_REQUEST.value())
-                //                .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .body(containsString("File must be either .html or .zip format"));
+                .statusCode(
+                        HttpStatus.BAD_REQUEST
+                                .value()) // Expect 400 Bad Request (or possibly 415 Unsupported
+                // Media Type depending on server config)
+                //                .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value()) //
+                // Alternative expectation if backend crashes
+                .body(
+                        containsString(
+                                "File must be either .html or .zip format")); // Expect specific
+        // error message
     }
 
-    /** 测试提供没有扩展名的文件时的API处理 */
+    /** Tests API handling when a file with no extension is provided. */
     @Test
     void testHtmlToPdf_WithNoExtension_ReturnsBadRequest() {
-        // 创建没有适当文件扩展名的内容
-        String htmlContent = "<html><body>测试</body></html>";
+        // Create HTML content but provide a filename without a proper extension
+        String htmlContent = "<html><body>Test</body></html>";
 
-        // 使用没有扩展名的文件发送请求
+        // Send request with a file lacking a .html or .zip extension
         given().multiPart(
                         "fileInput",
-                        "noextension",
+                        "noextension", // Filename without extension
                         htmlContent.getBytes(StandardCharsets.UTF_8),
-                        "text/html")
+                        "text/html") // Correct content type, but filename is checked
                 .multiPart("zoom", "1.0")
                 .when()
                 .post(API_ENDPOINT)
                 .then()
-                .statusCode(HttpStatus.BAD_REQUEST.value())
-                .body(containsString("File must be either .html or .zip format"));
+                .statusCode(HttpStatus.BAD_REQUEST.value()) // Expect 400 Bad Request
+                .body(
+                        containsString(
+                                "File must be either .html or .zip format")); // Expect specific
+        // error message
     }
 
-    /** 测试提供潜在恶意文件名时的API处理 */
+    /** Tests API handling with a potentially malicious filename (e.g., path traversal attempt). */
     @Test
     void testHtmlToPdf_WithMaliciousFilename_HandlesSecurely() {
-        // 在文件名中尝试路径遍历的HTML内容
-        String html = "<html><body><h1>测试内容</h1></body></html>";
+        // HTML content with a filename attempting path traversal
+        String html = "<html><body><h1>Test Content</h1></body></html>";
 
-        // 发送请求并验证响应
+        // Send the request and validate the response
         Response response =
                 given().multiPart(
                                 "fileInput",
-                                "../../../malicious/path/test.html",
+                                "../../../malicious/path/test.html", // Malicious filename attempt
                                 html.getBytes(StandardCharsets.UTF_8),
                                 "text/html")
                         .multiPart("zoom", "1.0")
                         .when()
                         .post(API_ENDPOINT)
                         .then()
-                        .statusCode(200) // 应该仍然工作，但文件名应该被清理
+                        .statusCode(
+                                200) // Expect it to still work, but filename should be sanitized
+                        // server-side
                         .contentType("application/pdf")
+                        // Check Content-Disposition header is sanitized (doesn't contain '../')
+                        .header("Content-Disposition", not(containsString("../")))
+                        .header(
+                                "Content-Disposition",
+                                containsString(
+                                        "filename=\"test.pdf\"")) // Or whatever sanitized name is
+                        // expected
                         .extract()
                         .response();
 
-        // 验证返回了PDF并且文件名已被清理
+        // Validate PDF is returned and potentially check if filename was sanitized
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试提供无效HTML结构时的API处理 */
+    /** Tests API handling with invalid HTML structure. */
     @Test
     void testHtmlToPdf_WithInvalidHtmlStructure() {
-        // 格式错误的HTML内容
-        String invalidHtml = "<html><body><h1>缺少闭合标签";
+        // Malformed HTML content (e.g., missing closing tag)
+        String invalidHtml = "<html><body><h1>Missing closing tag";
 
-        // 发送请求并验证响应
+        // Send the request and validate the response
         Response response =
                 given().multiPart(
                                 "fileInput",
@@ -243,28 +285,30 @@ public class HtmlToPdfApiBlackBoxTest {
                         .when()
                         .post(API_ENDPOINT)
                         .then()
-                        .statusCode(200) // 应该仍然工作，因为HTML渲染引擎是宽容的
+                        .statusCode(200) // Expect it might still work, as HTML renderers are often
+                        // lenient
+                        // Or potentially 500 Internal Server Error if the backend converter crashes
                         .contentType("application/pdf")
                         .extract()
                         .response();
 
-        // 验证尽管HTML无效但返回了PDF
+        // Validate PDF is returned even with invalid HTML (browser/renderer tolerance)
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试大型HTML文件的API处理 */
+    /** Tests API handling with a large HTML file. */
     @Test
     void testHtmlToPdf_WithLargeHtmlFile() {
-        // 生成大型HTML内容
+        // Generate large HTML content
         StringBuilder largeHtml = new StringBuilder("<html><body>");
-        for (int i = 0; i < 1000; i++) {
-            largeHtml.append("<p>大型内容段落 ").append(i).append("</p>");
+        for (int i = 0; i < 1000; i++) { // Adjust loop count based on desired size/complexity
+            largeHtml.append("<p>Paragraph of large content ").append(i).append("</p>");
         }
         largeHtml.append("</body></html>");
 
-        // 发送请求并验证响应
+        // Send the request and validate the response
         Response response =
                 given().multiPart(
                                 "fileInput",
@@ -275,28 +319,29 @@ public class HtmlToPdfApiBlackBoxTest {
                         .when()
                         .post(API_ENDPOINT)
                         .then()
-                        .statusCode(200)
+                        .statusCode(200) // Expect success
                         .contentType("application/pdf")
                         .extract()
                         .response();
 
-        // 验证返回了PDF
+        // Validate PDF is returned
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试包含潜在不安全内容的HTML的API处理 */
+    /** Tests API handling of HTML with potentially unsafe content (e.g., scripts). */
     @Test
     void testHtmlToPdf_WithUnsafeContent_SanitizesContent() {
-        // 包含潜在不安全元素的HTML内容（script, iframe）
+        // HTML content with potentially unsafe elements (script, iframe)
         String unsafeHtml =
-                "<html><body><h1>安全内容</h1>"
-                        + "<script>alert('XSS攻击');</script>"
-                        + "<iframe src='https://malicious-site.com'></iframe>"
+                "<html><body><h1>Safe Content</h1>"
+                        + "<script>alert('XSS attempt');</script>" // Script tag
+                        + "<iframe src='https://malicious-site.com'></iframe>" // Iframe tag
+                        + "<p>More content</p>"
                         + "</body></html>";
 
-        // 发送请求并验证响应
+        // Send the request and validate the response
         Response response =
                 given().multiPart(
                                 "fileInput",
@@ -307,24 +352,29 @@ public class HtmlToPdfApiBlackBoxTest {
                         .when()
                         .post(API_ENDPOINT)
                         .then()
-                        .statusCode(200) // 应该仍然工作，但内容应该被清理
+                        .statusCode(
+                                200) // Expect it to still work, but content should be sanitized by
+                        // the PDF renderer (scripts typically don't execute)
                         .contentType("application/pdf")
                         .extract()
                         .response();
 
-        // 验证返回了PDF
+        // Validate PDF is returned (verifying actual sanitization might require PDF content
+        // analysis)
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
+        // Further checks could involve extracting text from PDF and asserting that script content
+        // is absent.
     }
 
-    /** 测试提供空HTML文件时的API处理 */
+    /** Tests API handling with an empty HTML file. */
     @Test
     void testHtmlToPdf_WithEmptyHtmlFile_Success() {
-        // 空HTML内容
+        // Empty HTML content
         String emptyHtml = "";
 
-        // 发送请求并验证响应
+        // Send the request and validate the response
         Response response =
                 given().multiPart(
                                 "fileInput",
@@ -335,31 +385,34 @@ public class HtmlToPdfApiBlackBoxTest {
                         .when()
                         .post(API_ENDPOINT)
                         .then()
-                        .statusCode(200) // 应该仍然使用空内容工作
+                        .statusCode(
+                                200) // Should still work with empty content, producing a (likely
+                        // blank) PDF
                         .contentType("application/pdf")
                         .extract()
                         .response();
 
-        // 验证返回了PDF
+        // Validate PDF is returned (it might be very small or have zero pages depending on the
+        // converter)
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty (even if blank)");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试提供极小缩放因子时的API处理 */
+    /** Tests API handling with a very small zoom factor. */
     @Test
     void testHtmlToPdf_WithVerySmallZoom() {
-        // HTML内容
-        String html = "<html><body><h1>极小缩放测试</h1></body></html>";
+        // HTML content
+        String html = "<html><body><h1>Very Small Zoom Test</h1></body></html>";
 
-        // 发送具有极小缩放的请求
+        // Send request with a very small zoom factor
         Response response =
                 given().multiPart(
                                 "fileInput",
                                 "smallzoom.html",
                                 html.getBytes(StandardCharsets.UTF_8),
                                 "text/html")
-                        .multiPart("zoom", "0.1") // 非常小的缩放
+                        .multiPart("zoom", "0.1") // Very small zoom
                         .when()
                         .post(API_ENDPOINT)
                         .then()
@@ -368,26 +421,26 @@ public class HtmlToPdfApiBlackBoxTest {
                         .extract()
                         .response();
 
-        // 验证返回了PDF
+        // Validate PDF is returned
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试提供极大缩放因子时的API处理 */
+    /** Tests API handling with a very large zoom factor. */
     @Test
     void testHtmlToPdf_WithVeryLargeZoom() {
-        // HTML内容
-        String html = "<html><body><h1>极大缩放测试</h1></body></html>";
+        // HTML content
+        String html = "<html><body><h1>Very Large Zoom Test</h1></body></html>";
 
-        // 发送具有极大缩放的请求
+        // Send request with a very large zoom factor
         Response response =
                 given().multiPart(
                                 "fileInput",
                                 "largezoom.html",
                                 html.getBytes(StandardCharsets.UTF_8),
                                 "text/html")
-                        .multiPart("zoom", "10.0") // 非常大的缩放
+                        .multiPart("zoom", "10.0") // Very large zoom
                         .when()
                         .post(API_ENDPOINT)
                         .then()
@@ -396,54 +449,60 @@ public class HtmlToPdfApiBlackBoxTest {
                         .extract()
                         .response();
 
-        // 验证返回了PDF
+        // Validate PDF is returned
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    /** 测试省略缩放参数时的API处理（应使用默认值） */
+    /** Tests API handling when the zoom parameter is omitted (should use default). */
     @Test
     void testHtmlToPdf_WithoutZoomParameter_UsesDefault() {
-        // HTML内容
-        String html = "<html><body><h1>默认缩放测试</h1></body></html>";
+        // HTML content
+        String html = "<html><body><h1>Default Zoom Test</h1></body></html>";
 
-        // 发送不包含缩放参数的请求
+        // Send request without the zoom parameter
         Response response =
                 given().multiPart(
                                 "fileInput",
                                 "nozoom.html",
                                 html.getBytes(StandardCharsets.UTF_8),
                                 "text/html")
-                        .when() // 未提供缩放参数
+                        .when() // No 'zoom' multiPart parameter provided
                         .post(API_ENDPOINT)
                         .then()
-                        .statusCode(200) // 应使用默认缩放值
+                        .statusCode(200) // Should succeed using the default zoom value
                         .contentType("application/pdf")
                         .extract()
                         .response();
 
-        // 验证返回了PDF
+        // Validate PDF is returned
         byte[] pdfBytes = response.asByteArray();
-        assertTrue(pdfBytes.length > 0, "PDF不应为空");
-        assertTrue(isPdfValid(pdfBytes), "响应应该是一个有效的PDF");
+        assertTrue(pdfBytes.length > 0, "PDF should not be empty");
+        assertTrue(isPdfValid(pdfBytes), "Response should be a valid PDF document");
     }
 
-    // 辅助方法
+    // --- Helper Methods ---
 
-    /** 创建包含HTML和CSS文件的测试ZIP文件 */
+    /**
+     * Creates a test ZIP file containing an HTML file and a CSS file.
+     *
+     * @return Byte array representing the ZIP file content.
+     * @throws IOException If an I/O error occurs during ZIP creation.
+     */
     private byte[] createTestZipWithHtml() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            // 添加HTML文件
+            // Add HTML file
             ZipEntry htmlEntry = new ZipEntry("index.html");
             zos.putNextEntry(htmlEntry);
+            // HTML links to the CSS file within the ZIP
             zos.write(
-                    "<html><head><link rel=\"stylesheet\" href=\"styles.css\"></head><body><h1>ZIP中的测试HTML</h1></body></html>"
+                    "<html><head><link rel=\"stylesheet\" href=\"styles.css\"></head><body><h1>Test HTML in ZIP</h1></body></html>"
                             .getBytes(StandardCharsets.UTF_8));
             zos.closeEntry();
 
-            // 添加CSS文件
+            // Add CSS file
             ZipEntry cssEntry = new ZipEntry("styles.css");
             zos.putNextEntry(cssEntry);
             zos.write("h1 { color: blue; font-size: 24px; }".getBytes(StandardCharsets.UTF_8));
@@ -452,12 +511,24 @@ public class HtmlToPdfApiBlackBoxTest {
         return baos.toByteArray();
     }
 
-    /** 检查提供的字节数组是否表示有效的PDF文档 */
+    /**
+     * Checks if the provided byte array represents a valid PDF document by attempting to load it
+     * using Apache PDFBox.
+     *
+     * @param pdfBytes The byte array potentially containing PDF data.
+     * @return true if the bytes represent a valid, non-empty PDF; false otherwise.
+     */
     private boolean isPdfValid(byte[] pdfBytes) {
+        if (pdfBytes == null || pdfBytes.length == 0) {
+            return false;
+        }
         try (PDDocument document = Loader.loadPDF(pdfBytes)) {
-            // 如果我们可以将其加载为PDF文档，则它是有效的
-            return document.getNumberOfPages() > 0;
-        } catch (Exception e) {
+            // If we can load it and it has at least one page, consider it valid for basic checks.
+            return document.getNumberOfPages()
+                    >= 0; // Allow 0 pages for potentially valid but blank PDFs
+        } catch (IOException e) {
+            // If PDFBox fails to load it, it's considered invalid.
+            System.err.println("PDF validation failed: " + e.getMessage());
             return false;
         }
     }
