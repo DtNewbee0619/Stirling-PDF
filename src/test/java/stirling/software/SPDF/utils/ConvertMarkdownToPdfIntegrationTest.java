@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,36 +45,38 @@ public class ConvertMarkdownToPdfIntegrationTest {
      */
     @Test
     public void convertValidMarkdownToPdf_shouldReturnPdfBytes() throws Exception {
-        // Skip test automatically if weasyprint is missing
+        // Skip if weasyprint is not on PATH
         try {
             ProcessBuilder pb = new ProcessBuilder("which", "weasyprint");
-            Process process = pb.start();
-            int exitCode = process.waitFor();
-            org.junit.jupiter.api.Assumptions.assumeTrue(
-                    exitCode == 0,
-                    "Skipping test: weasyprint is not installed in this environment");
+            int exit = pb.start().waitFor();
+            org.junit.jupiter.api.Assumptions.assumeTrue(exit == 0, "Skipping: weasyprint not installed");
         } catch (Exception e) {
-            org.junit.jupiter.api.Assumptions.assumeTrue(
-                    false, "Skipping test: weasyprint availability check failed");
+            org.junit.jupiter.api.Assumptions.assumeTrue(false, "Skipping: weasyprint check failed");
             return;
         }
 
-        // Load sample Markdown file from test resources
-        ClassPathResource markdownResource = new ClassPathResource("Markdown.md");
-        MockMultipartFile mockFile =
-                new MockMultipartFile(
-                        "fileInput",
-                        "Markdown.md",
-                        "text/markdown",
-                        markdownResource.getInputStream());
+        // Load sample Markdown file
+        ClassPathResource res = new ClassPathResource("Markdown.md");
+        MockMultipartFile mockFile = new MockMultipartFile(
+            "fileInput",
+            "Markdown.md",
+            "text/markdown",
+            res.getInputStream()
+        );
 
         mockMvc.perform(
-                        multipart("/api/v1/convert/markdown/pdf")
-                                .file(mockFile)
-                                .contentType(MediaType.MULTIPART_FORM_DATA))
-                .andExpect(status().isOk())
-                .andExpect(
-                        header().string("Content-Type", MediaType.APPLICATION_OCTET_STREAM_VALUE));
+                multipart("/api/v1/convert/markdown/pdf")
+                    .file(mockFile)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+            )
+            .andExpect(status().isOk())
+            // Expect PDF content type, not octet-stream
+            .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE))
+            // Optional: verify Content-Disposition has the correct filename
+            .andExpect(header().string(
+                HttpHeaders.CONTENT_DISPOSITION,
+                containsString("filename=\"Markdown.pdf\"")
+            ));
     }
 
     /**
@@ -127,7 +130,6 @@ public class ConvertMarkdownToPdfIntegrationTest {
                 .andReturn()  // 一定要加 .andReturn() 触发执行
         );
 
-        // 从 ServletException 拿到根 cause
         Throwable root = ex.getRootCause();
         assertNotNull(root, "Should have a root cause");
         assertTrue(root instanceof IllegalArgumentException,
