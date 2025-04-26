@@ -59,6 +59,9 @@ public class FileToPdfConversionTest {
         sanitizeHtmlFilesInZipMethod.setAccessible(true);
     }
 
+    /*
+     * Test cases for convertHtmlToPdf method
+     */
     @Test
     public void testConvertHtmlToPdf_WithValidHtml() throws IOException, InterruptedException {
         // Arrange
@@ -114,6 +117,12 @@ public class FileToPdfConversionTest {
         }
     }
 
+    /*
+     * Test case: Invalid file format
+     *
+     * <p>This test verifies that an exception is thrown when the input file is not in HTML or ZIP
+     * format.
+     */
     @Test
     public void testConvertHtmlToPdf_WithUnsupportedFormat() throws IOException {
         // Arrange
@@ -147,6 +156,11 @@ public class FileToPdfConversionTest {
         }
     }
 
+    /*
+     * Test case: ProcessExecutor throws IOException
+     *
+     * <p>This test verifies that the method handles IOException thrown by ProcessExecutor.
+     */
     @Test
     public void testConvertHtmlToPdf_ProcessException() throws IOException, InterruptedException {
         // Arrange
@@ -204,6 +218,11 @@ public class FileToPdfConversionTest {
         }
     }
 
+    /*
+     * Test case: sanitizeZipFilename method
+     *
+     * <p>This test verifies that the method correctly sanitizes the filename for ZIP files.
+     */
     @Test
     public void testSanitizeZipFilename() {
         // Test null or empty input
@@ -230,6 +249,11 @@ public class FileToPdfConversionTest {
         assertEquals("safe/path/file.txt", FileToPdf.sanitizeZipFilename("safe/path/file.txt"));
     }
 
+    /*
+     * Test case: sanitizeHtmlContent method
+     *
+     * <p>This test verifies that the method correctly sanitizes HTML content.
+     */
     @Test
     public void testSanitizeHtmlContent() throws Exception {
         // Set up some test HTML
@@ -254,6 +278,11 @@ public class FileToPdfConversionTest {
         }
     }
 
+    /*
+     * Test case: sanitizeHtmlFilesInZip method
+     *
+     * <p>This test verifies that the method correctly sanitizes HTML files in a ZIP archive.
+     */
     @Test
     public void testConvertHtmlToPdf_ErrorHandling() throws IOException, InterruptedException {
         // Arrange
@@ -312,6 +341,11 @@ public class FileToPdfConversionTest {
         }
     }
 
+    /*
+     * Test case: convertHtmlToPdf with ZIP file
+     *
+     * <p>This test verifies that the method correctly processes a ZIP file containing HTML files.
+     */
     @Test
     void testConvertHtmlToPdf_WithZipFile_ProcessesCorrectly() throws Exception {
         byte[] zipBytes = createTestZipWithHtml();
@@ -320,19 +354,14 @@ public class FileToPdfConversionTest {
         boolean disableSanitize = false;
         byte[] expectedBytes = "ZIP PDF Content".getBytes(StandardCharsets.UTF_8);
 
-        // 2) 模拟所有临时路径
         Path dummyInput = Path.of("dummy_input.zip");
         Path dummyOutput = Path.of("dummy_output.pdf");
         Path dummyUnzipDir = Path.of("dummy_unzip_dir");
 
-        try (
-        // 完全 mock 掉 Files 的静态方法
-        MockedStatic<Files> filesMock = mockStatic(Files.class);
-                // mock ProcessExecutor.getInstance(...)
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class);
                 MockedStatic<ProcessExecutor> procExecMock = mockStatic(ProcessExecutor.class);
-                // 部分真实调用 FileToPdf，其它静态方法可 stub
                 MockedStatic<FileToPdf> ftpMock = mockStatic(FileToPdf.class, CALLS_REAL_METHODS)) {
-            // ——— stub 创建临时文件/目录 ———
+
             filesMock
                     .when(() -> Files.createTempFile(eq("input_"), eq(".zip")))
                     .thenReturn(dummyInput);
@@ -343,18 +372,14 @@ public class FileToPdfConversionTest {
                     .when(() -> Files.createTempDirectory(eq("unzipped_")))
                     .thenReturn(dummyUnzipDir);
 
-            // ——— stub 将 zipBytes 写入 input 文件 ———
             filesMock.when(() -> Files.write(eq(dummyInput), eq(zipBytes))).thenReturn(dummyInput);
 
-            // —— stub 我们已经把 sanitizeHtmlFilesInZip 改成 package-private ——
-            //     直接劫持成空实现，不做任何实际解压/重打包
             ftpMock.when(
                             () ->
                                     FileToPdf.sanitizeHtmlFilesInZip(
                                             eq(dummyInput), eq(disableSanitize)))
                     .thenAnswer(inv -> null);
 
-            // ——— stub 调用 WeasyPrint 进程 ——
             ProcessExecutor fakeExec = mock(ProcessExecutor.class);
             ProcessExecutor.ProcessExecutorResult fakeResult =
                     mock(ProcessExecutor.ProcessExecutorResult.class);
@@ -363,10 +388,8 @@ public class FileToPdfConversionTest {
                     .thenReturn(fakeExec);
             when(fakeExec.runCommandWithOutputHandling(any(List.class))).thenReturn(fakeResult);
 
-            // ——— stub 读取输出 PDF ——
             filesMock.when(() -> Files.readAllBytes(eq(dummyOutput))).thenReturn(expectedBytes);
 
-            // ——— stub 删除临时文件 ——
             filesMock.when(() -> Files.deleteIfExists(any(Path.class))).thenReturn(true);
 
             // ——— Act ———
@@ -394,6 +417,9 @@ public class FileToPdfConversionTest {
         }
     }
 
+    /*
+     * Helper method to create a test ZIP file with HTML and CSS files
+     */
     private byte[] createTestZipWithHtml() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
@@ -414,29 +440,30 @@ public class FileToPdfConversionTest {
         return baos.toByteArray();
     }
 
+    /*
+     * Test case: sanitizeHtmlFilesInZip method
+     *
+     * <p>This test verifies that the method correctly sanitizes HTML files in a ZIP archive.
+     */
     @Test
     void testSanitizeHtmlFilesInZip_PreservesEntriesWhenDisableSanitize() throws IOException {
-        // 1. 在磁盘上创建一个临时 ZIP，里面包含一个 HTML 文件和一个 TXT 文件
         Path zipPath = Files.createTempFile("test_", ".zip");
         byte[] htmlContent =
                 "<html><body>Original Content</body></html>".getBytes(StandardCharsets.UTF_8);
         byte[] txtContent = "Plain text".getBytes(StandardCharsets.UTF_8);
 
         try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
-            // HTML 条目
             zos.putNextEntry(new ZipEntry("folder/index.html"));
             zos.write(htmlContent);
             zos.closeEntry();
-            // 非 HTML 条目
+
             zos.putNextEntry(new ZipEntry("folder/readme.txt"));
             zos.write(txtContent);
             zos.closeEntry();
         }
 
-        // 2. 调用方法：禁用 sanitize，所以 HTML 内容应保持不变
         FileToPdf.sanitizeHtmlFilesInZip(zipPath, /* disableSanitize= */ true);
 
-        // 3. 打开重新打包后的 ZIP，收集每个条目的内容
         Map<String, byte[]> entries = new HashMap<>();
         try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipPath))) {
             ZipEntry entry;
@@ -452,14 +479,18 @@ public class FileToPdfConversionTest {
             }
         }
 
-        // 4. 断言：两个条目都存在且内容和原始输入一致
-        assertTrue(entries.containsKey("folder/index.html"), "应包含 HTML 条目");
-        assertArrayEquals(htmlContent, entries.get("folder/index.html"), "HTML 内容应保持不变");
+        assertTrue(entries.containsKey("folder/index.html"), "Should include HTML entries");
+        assertArrayEquals(
+                htmlContent,
+                entries.get("folder/index.html"),
+                "HTML content should remain unchanged");
 
-        assertTrue(entries.containsKey("folder/readme.txt"), "应包含非 HTML 条目");
-        assertArrayEquals(txtContent, entries.get("folder/readme.txt"), "非 HTML 文件内容应保持不变");
+        assertTrue(entries.containsKey("folder/readme.txt"), "Should include non-HTML entries");
+        assertArrayEquals(
+                txtContent,
+                entries.get("folder/readme.txt"),
+                "Non-HTML file content should remain unchanged");
 
-        // 5. 清理
         Files.deleteIfExists(zipPath);
     }
 }

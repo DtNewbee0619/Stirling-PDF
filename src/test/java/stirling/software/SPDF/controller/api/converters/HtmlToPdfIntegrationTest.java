@@ -61,6 +61,12 @@ public class HtmlToPdfIntegrationTest {
                 weasyprintAvailable, "Skipping test: weasyprint is not available/found.");
     }
 
+    /*
+     * Test case: Valid HTML file input
+     *
+     * <p>This test verifies that a proper HTML file is converted successfully to PDF. If
+     * weasyprint is missing, this test will be skipped automatically.
+     */
     @Test
     public void convertValidHtmlToPdf_shouldReturnPdfBytes() throws Exception {
         assumeWeasyprint(); // Skip if weasyprint is not available
@@ -86,6 +92,12 @@ public class HtmlToPdfIntegrationTest {
                 .andExpect(header().string("Content-Length", greaterThan("0")));
     }
 
+    /*
+     * Test case: Empty HTML file
+     *
+     * <p>This test verifies that an empty HTML file is handled correctly. If weasyprint is missing,
+     * this test will be skipped automatically.
+     */
     @Test
     public void convertEmptyHtmlFile_shouldReturnSuccessAndEmptyPdf() throws Exception {
         // assumeWeasyprint(); // May or may not need weasyprint depending on handling
@@ -103,6 +115,12 @@ public class HtmlToPdfIntegrationTest {
         // .andExpect(header().string("Content-Length", "some_small_value"));
     }
 
+    /*
+     * Test case: Invalid HTML file
+     *
+     * <p>❌ This test will fail if weasyprint is not available or if the HTML cannot be rendered.
+     * Ensure that weasyprint is installed and accessible in the environment where this test runs.
+     */
     @Test
     public void missingFileInput_shouldReturnBadRequest() throws Exception {
         ServletException ex =
@@ -128,6 +146,12 @@ public class HtmlToPdfIntegrationTest {
                 "Exception message should indicate missing Markdown file");
     }
 
+    /*
+     * Test case: HTML with CSS
+     *
+     * <p>❌ This test will fail if weasyprint is not available or if the CSS cannot be rendered.
+     * Ensure that weasyprint is installed and accessible in the environment where this test runs.
+     */
     @Test
     public void convertHtmlWithCss_shouldReturnStyledPdf() throws Exception {
         assumeWeasyprint();
@@ -161,6 +185,12 @@ public class HtmlToPdfIntegrationTest {
                 .andExpect(header().string("Content-Type", MediaType.APPLICATION_PDF_VALUE));
     }
 
+    /*
+     * Test case: HTML with inline image
+     *
+     * <p>❌ This test will fail if weasyprint is not available or if the image cannot be rendered.
+     * Ensure that weasyprint is installed and accessible in the environment where this test runs.
+     */
     @Test
     public void convertHtmlWithInlineImage_shouldReturnPdfWithImage() throws Exception {
         assumeWeasyprint();

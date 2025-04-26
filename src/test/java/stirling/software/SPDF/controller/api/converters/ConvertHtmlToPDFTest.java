@@ -44,6 +44,11 @@ public class ConvertHtmlToPDFTest {
                         mockPdfDocumentFactory, mockApplicationProperties, mockRuntimePathConfig);
     }
 
+    /*
+     * Test cases for the ConvertHtmlToPDF.HtmlToPdf method.
+     * These tests cover various scenarios including null input, invalid file types,
+     * and successful conversions for both HTML and ZIP files.
+     */
     @Test
     void testHtmlToPdf_WithNullFileInput_ThrowsException() {
         // Arrange
@@ -58,6 +63,10 @@ public class ConvertHtmlToPDFTest {
         assertEquals("Please provide an HTML or ZIP file for conversion.", exception.getMessage());
     }
 
+    /*
+     * Test case for invalid file extension.
+     * This test checks if the method throws an exception when the file extension is neither .html nor .zip.
+     */
     @Test
     void testHtmlToPdf_WithInvalidFileExtension_ThrowsException() {
         // Arrange
@@ -75,6 +84,10 @@ public class ConvertHtmlToPDFTest {
         assertEquals("File must be either .html or .zip format.", exception.getMessage());
     }
 
+    /*
+     * Test case for successful conversion of an HTML file.
+     * This test verifies that the method correctly processes an HTML file and returns a PDF response.
+     */
     @Test
     void testHtmlToPdf_WithHtmlFile_Success() throws Exception {
         // Arrange
@@ -135,6 +148,10 @@ public class ConvertHtmlToPDFTest {
         }
     }
 
+    /*
+     * Test case for successful conversion of a ZIP file.
+     * This test verifies that the method correctly processes a ZIP file and returns a PDF response.
+     */
     @Test
     void testHtmlToPdf_WithZipFile_Success() throws Exception {
         // Arrange
@@ -192,6 +209,10 @@ public class ConvertHtmlToPDFTest {
         }
     }
 
+    /*
+     * Test case for invalid file extension without a file extension.
+     * This test checks if the method throws an exception when the file has no extension.
+     */
     @Test
     void testHtmlToPdf_WithNoFileExtension_ThrowsException() {
         // Arrange
@@ -209,6 +230,10 @@ public class ConvertHtmlToPDFTest {
         assertEquals("File must be either .html or .zip format.", exception.getMessage());
     }
 
+    /*
+     * Test case for malicious filename handling.
+     * This test verifies that the method handles a malicious filename securely.
+     */
     @Test
     void testHtmlToPdf_WithMaliciousFilename_HandlesSecurely() throws Exception {
         // Arrange
